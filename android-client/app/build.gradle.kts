@@ -9,10 +9,10 @@ android {
 
     defaultConfig {
         applicationId = "com.tseuvpn.mobile"
-        minSdk = 21
+        minSdk = 26
         targetSdk = 33
-        versionCode = 4
-        versionName = "1.0.4"
+        versionCode = 5
+        versionName = "1.1.0"
     }
 
     lint {
@@ -37,8 +37,13 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // Durcissement & obfuscation R8 contre la rétro-ingénierie
+            isMinifyEnabled = true
             isShrinkResources = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
             signingConfig = if (file("release-key.jks").exists()) {
                 signingConfigs.getByName("release")
             } else {
@@ -58,4 +63,5 @@ android {
 }
 
 dependencies {
+    implementation(files("libs/libv2ray.aar"))
 }

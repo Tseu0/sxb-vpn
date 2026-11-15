@@ -1,0 +1,5 @@
+-keep class libv2ray.** { *; }
+-dontwarn libv2ray.**
+-keep class go.** { *; }
+-dontwarn go.**
+-keep class com.sxbvpn.mobile.** { *; }

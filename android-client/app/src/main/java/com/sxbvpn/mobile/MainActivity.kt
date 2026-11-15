@@ -22,11 +22,10 @@ import com.sxbvpn.mobile.vpn.SxbVpnService
 import kotlin.concurrent.thread
 
 /**
- * Interface Moderne TSEU VPN :
- * - Bouton circulaire central avec chronomètre en direct
- * - Sélecteur des profils déchiffrés (AES-256-GCM)
- * - Carte "Quota du forfait" avec barre de progression et date d'expiration
- * - Écoute réelle du statut TUN (garantit l'affichage de l'icône clé 🔑)
+ * Interface Moderne TSEU VPN (Architecture SXB Complète) :
+ * - Réception chiffrée AES-256-GCM + stockage scellé Android Keystore
+ * - Moteur réel Xray/V2Ray (libv2ray.aar)
+ * - Mise à jour du quota en temps réel toutes les 15s + Kill-Switch automatique
  */
 class MainActivity : Activity() {
 
@@ -34,6 +33,7 @@ class MainActivity : Activity() {
     private var secondsElapsed = 0L
     private val timerHandler = Handler(Looper.getMainLooper())
     private var loadedProfiles: List<SxbApiClient.VpnProfile> = emptyList()
+    private var currentPlanName: String = "Forfait TSEU"
 
     private lateinit var statusPill: TextView
     private lateinit var powerCircle: LinearLayout
@@ -42,6 +42,8 @@ class MainActivity : Activity() {
     private lateinit var profileSpinner: Spinner
     private lateinit var quotaCardText: TextView
     private lateinit var quotaProgress: ProgressBar
+    private lateinit var serverInput: EditText
+    private lateinit var couponInput: EditText
 
     private val timerRunnable = object : Runnable {
         override fun run() {
@@ -58,9 +60,23 @@ class MainActivity : Activity() {
 
     private val vpnStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            val connected = intent?.getBooleanExtra("connected", false) ?: false
-            val msg = intent?.getStringExtra("message") ?: ""
-            updateConnectionUi(connected, msg)
+            when (intent?.action) {
+                SxbVpnService.ACTION_VPN_STATE -> {
+                    val connected = intent.getBooleanExtra("connected", false)
+                    val msg = intent.getStringExtra("message") ?: ""
+                    updateConnectionUi(connected, msg)
+                }
+                SxbVpnService.ACTION_QUOTA_UPDATE -> {
+                    val quota = intent.getLongExtra("quota_bytes", 1L).coerceAtLeast(1L)
+                    val used = intent.getLongExtra("used_bytes", 0L)
+                    val rem = intent.getLongExtra("remaining_bytes", 0L)
+                    val remMb = rem / (1024 * 1024)
+                    val totalMb = quota / (1024 * 1024)
+                    val pct = ((used * 100) / quota).toInt().coerceIn(0, 100)
+                    quotaProgress.progress = pct
+                    quotaCardText.text = "$currentPlanName • Restant : $remMb Mo / $totalMb Mo"
+                }
+            }
         }
     }
 
@@ -68,8 +84,8 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
 
         val prefs = getSharedPreferences("tseu_secure_prefs", MODE_PRIVATE)
-        val savedServerUrl = prefs.getString("server_url", "https://elliott-karl-methods-still.trycloudflare.com")
-            ?: "https://elliott-karl-methods-still.trycloudflare.com"
+        val savedServerUrl = prefs.getString("server_url", "http://192.168.43.196:3847")
+            ?: "http://192.168.43.196:3847"
         val savedCode = prefs.getString("active_code", "SXB-DEMO-2026") ?: "SXB-DEMO-2026"
 
         val scroll = ScrollView(this).apply {
@@ -80,7 +96,6 @@ class MainActivity : Activity() {
             setPadding(44, 56, 44, 48)
         }
 
-        // En-tête
         val header = TextView(this).apply {
             text = "⚡ TSEU VPN"
             textSize = 26f
@@ -88,20 +103,19 @@ class MainActivity : Activity() {
             setTextColor(Color.parseColor("#06B6D4"))
         }
         val subHeader = TextView(this).apply {
-            text = "Tunnel Multi-Protocole Chiffré (AES-256-GCM)"
+            text = "Moteur Xray Réel • Boîte Noire AES-256-GCM"
             textSize = 13f
             setTextColor(Color.parseColor("#94A3B8"))
             setPadding(0, 4, 0, 28)
         }
 
-        // Carte Sélecteur de Profil
         val profileCard = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(32, 24, 32, 24)
             background = roundedBox("#101B2E", "#1E2F4A", 28f)
         }
         val profileLabel = TextView(this).apply {
-            text = "CONFIGURATION ACTIVE"
+            text = "CONFIGURATION ACTIVE (CHIFFRÉE)"
             textSize = 11f
             setTypeface(null, Typeface.BOLD)
             setTextColor(Color.parseColor("#94A3B8"))
@@ -116,7 +130,6 @@ class MainActivity : Activity() {
         profileCard.addView(profileLabel)
         profileCard.addView(profileSpinner)
 
-        // Pastille de statut
         statusPill = TextView(this).apply {
             text = "● Déconnecté"
             textSize = 13f
@@ -135,7 +148,6 @@ class MainActivity : Activity() {
             bottomMargin = 24
         }
 
-        // Gros bouton circulaire central
         powerCircle = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
@@ -162,7 +174,6 @@ class MainActivity : Activity() {
         powerCircle.addView(timerText)
         powerCircle.addView(connectHintText)
 
-        // Carte Quota du forfait
         val quotaCard = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(32, 24, 32, 24)
@@ -188,7 +199,6 @@ class MainActivity : Activity() {
         quotaCard.addView(quotaCardText)
         quotaCard.addView(quotaProgress)
 
-        // Carte Configuration Serveur & Code
         val configCard = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(32, 24, 32, 24)
@@ -204,7 +214,7 @@ class MainActivity : Activity() {
             textSize = 12f
             setTextColor(Color.parseColor("#94A3B8"))
         }
-        val serverInput = EditText(this).apply {
+        serverInput = EditText(this).apply {
             setText(savedServerUrl)
             setTextColor(Color.WHITE)
             textSize = 13f
@@ -215,7 +225,7 @@ class MainActivity : Activity() {
             setTextColor(Color.parseColor("#94A3B8"))
             setPadding(0, 12, 0, 0)
         }
-        val couponInput = EditText(this).apply {
+        couponInput = EditText(this).apply {
             setText(savedCode)
             setTextColor(Color.WHITE)
             textSize = 15f
@@ -225,7 +235,6 @@ class MainActivity : Activity() {
         configCard.addView(couponLabel)
         configCard.addView(couponInput)
 
-        // Action du bouton circulaire central
         powerCircle.setOnClickListener {
             if (isVpnConnected) {
                 stopVpnService()
@@ -240,7 +249,7 @@ class MainActivity : Activity() {
             prefs.edit().putString("server_url", serverUrl).putString("active_code", code).apply()
             val apiClient = SxbApiClient(baseUrl = serverUrl)
 
-            statusPill.text = "● Activation en cours..."
+            statusPill.text = "● Déchiffrement AES-256-GCM..."
             statusPill.setTextColor(Color.parseColor("#F59E0B"))
 
             thread {
@@ -251,7 +260,11 @@ class MainActivity : Activity() {
                             updateConnectionUi(false, res.error ?: "Code refusé")
                             Toast.makeText(this, res.error, Toast.LENGTH_LONG).show()
                         } else {
-                            CryptoVault.encryptToLocalStore(res.decryptedProfilesJson)
+                            // Scellement matériel dans l'Android Keystore
+                            val sealed = CryptoVault.encryptToLocalStore(res.decryptedProfilesJson)
+                            prefs.edit().putString("vault_profiles", sealed).apply()
+
+                            currentPlanName = res.planName
                             loadedProfiles = res.profiles
                             if (loadedProfiles.isNotEmpty()) {
                                 val names = loadedProfiles.map { "[${it.protocol.uppercase()}] ${it.name}" }
@@ -266,7 +279,7 @@ class MainActivity : Activity() {
                             val totalMb = (res.quotaBytes / (1024 * 1024)).coerceAtLeast(1)
                             val pct = ((res.usedBytes * 100) / res.quotaBytes).toInt().coerceIn(0, 100)
                             quotaProgress.progress = pct
-                            quotaCardText.text = "${res.planName} • Restant : $remMb Mo / $totalMb Mo"
+                            quotaCardText.text = "$currentPlanName • Restant : $remMb Mo / $totalMb Mo"
 
                             requestAndStartVpn()
                         }
@@ -289,7 +302,10 @@ class MainActivity : Activity() {
         scroll.addView(root)
         setContentView(scroll)
 
-        val filter = IntentFilter(SxbVpnService.ACTION_VPN_STATE)
+        val filter = IntentFilter().apply {
+            addAction(SxbVpnService.ACTION_VPN_STATE)
+            addAction(SxbVpnService.ACTION_QUOTA_UPDATE)
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(vpnStateReceiver, filter, RECEIVER_NOT_EXPORTED)
         } else {
@@ -309,7 +325,7 @@ class MainActivity : Activity() {
             statusPill.text = "● $message"
             statusPill.setTextColor(Color.parseColor("#10B981"))
             powerCircle.background = circleBox("#064E3B", "#10B981")
-            connectHintText.text = "CONNECTÉ (CLÉ 🔑 ACTIVE)"
+            connectHintText.text = "XRAY ACTIF (CLÉ 🔑)"
             connectHintText.setTextColor(Color.parseColor("#6EE7B7"))
             secondsElapsed = 0
             timerHandler.removeCallbacks(timerRunnable)
@@ -337,10 +353,15 @@ class MainActivity : Activity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == 100 && resultCode == RESULT_OK) {
-            val selectedProfile = loadedProfiles.getOrNull(profileSpinner.selectedItemPosition)?.name ?: "Serveur TSEU"
+            val selected = loadedProfiles.getOrNull(profileSpinner.selectedItemPosition)
+            val hwid = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID) ?: "ANDROID-HWID"
             val vpnIntent = Intent(this, SxbVpnService::class.java).apply {
                 action = SxbVpnService.ACTION_CONNECT
-                putExtra("profile_name", selectedProfile)
+                putExtra("profile_id", selected?.id ?: -1)
+                putExtra("profile_name", selected?.name ?: "Serveur TSEU")
+                putExtra("server_url", serverInput.text.toString().trim().removeSuffix("/"))
+                putExtra("coupon_code", couponInput.text.toString().trim())
+                putExtra("hwid", hwid)
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 startForegroundService(vpnIntent)

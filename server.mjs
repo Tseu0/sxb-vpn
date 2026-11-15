@@ -181,23 +181,143 @@ if (planCount === 0) {
   logAudit('INIT_SYSTEM', 'SYSTEM', 'Base de données TSEU VPN initialisée avec les profils multi-protocoles et coupons de démo.');
 }
 
-// Chiffrement AES-256-GCM des profils pour l'application Android (Boîte noire)
-function encryptProfilesPayload(payloadObj, hwid) {
-  const key = crypto.scryptSync(MASTER_SECRET, `sxb-salt-${hwid}`, 32);
+// Générateur de configuration JSON Xray-core complète côté serveur (prête pour libv2ray.aar)
+function buildXrayJsonFromRaw(rawConfig) {
+  try {
+    const text = (rawConfig || '').trim();
+    let outbound = null;
+
+    if (text.startsWith('vmess://')) {
+      const cfg = JSON.parse(Buffer.from(text.slice(8), 'base64').toString('utf8'));
+      const isTls = cfg.tls === 'tls';
+      const net = cfg.net || 'tcp';
+      outbound = {
+        tag: 'proxy',
+        protocol: 'vmess',
+        settings: {
+          vnext: [{
+            address: cfg.add,
+            port: Number(cfg.port) || 443,
+            users: [{
+              id: cfg.id,
+              alterId: Number(cfg.aid) || 0,
+              security: cfg.scy || 'auto'
+            }]
+          }]
+        },
+        streamSettings: {
+          network: net,
+          security: isTls ? 'tls' : 'none',
+          ...(isTls ? {
+            tlsSettings: {
+              serverName: cfg.sni || cfg.host || cfg.add,
+              allowInsecure: Boolean(cfg.allowInsecure ?? true)
+            }
+          } : {}),
+          ...(net === 'ws' ? {
+            wsSettings: {
+              path: cfg.path || '/',
+              headers: cfg.host ? { Host: cfg.host } : {}
+            }
+          } : {})
+        }
+      };
+    } else if (text.startsWith('vless://')) {
+      const u = new URL(text);
+      const security = u.searchParams.get('security') || 'none';
+      const net = u.searchParams.get('type') || 'tcp';
+      const sni = u.searchParams.get('sni') || u.searchParams.get('host') || u.hostname;
+      const pbk = u.searchParams.get('pbk') || '';
+      const sid = u.searchParams.get('sid') || '';
+      const flow = u.searchParams.get('flow') || '';
+      const fp = u.searchParams.get('fp') || 'chrome';
+      const pathWs = u.searchParams.get('path') || '/';
+      const hostWs = u.searchParams.get('host') || sni;
+
+      outbound = {
+        tag: 'proxy',
+        protocol: 'vless',
+        settings: {
+          vnext: [{
+            address: u.hostname,
+            port: Number(u.port) || 443,
+            users: [{
+              id: u.username,
+              encryption: u.searchParams.get('encryption') || 'none',
+              ...(flow ? { flow } : {})
+            }]
+          }]
+        },
+        streamSettings: {
+          network: net,
+          security,
+          ...(security === 'tls' ? {
+            tlsSettings: { serverName: sni, fingerprint: fp, allowInsecure: true }
+          } : {}),
+          ...(security === 'reality' ? {
+            realitySettings: { serverName: sni, fingerprint: fp, publicKey: pbk, shortId: sid }
+          } : {}),
+          ...(net === 'ws' ? {
+            wsSettings: { path: pathWs, headers: { Host: hostWs } }
+          } : {})
+        }
+      };
+    }
+
+    if (!outbound) return null;
+
+    return JSON.stringify({
+      log: { loglevel: 'warning' },
+      stats: {},
+      policy: {
+        levels: { '0': { statsUserUplink: true, statsUserDownlink: true } },
+        system: { statsOutboundUplink: true, statsOutboundDownlink: true }
+      },
+      inbounds: [{
+        tag: 'socks-in',
+        listen: '127.0.0.1',
+        port: 10808,
+        protocol: 'socks',
+        settings: { auth: 'noauth', udp: true },
+        sniffing: { enabled: true, destOverride: ['http', 'tls'] }
+      }],
+      outbounds: [
+        outbound,
+        { tag: 'direct', protocol: 'freedom' },
+        { tag: 'block', protocol: 'blackhole' }
+      ],
+      routing: {
+        domainStrategy: 'AsIs',
+        rules: [
+          { type: 'field', ip: ['geoip:private'], outboundTag: 'direct' }
+        ]
+      }
+    });
+  } catch {
+    return null;
+  }
+}
+
+// Chiffrement AES-256-GCM (PBKDF2-HMAC-SHA256) des profils pour l'application Android (Boîte noire)
+function encryptProfilesPayload(payloadObj, hwid, includeSimulatorPreview = false) {
+  const key = crypto.pbkdf2Sync(MASTER_SECRET, `tseu-salt-${hwid}`, 10000, 32, 'sha256');
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
   const plaintext = JSON.stringify(payloadObj);
   const encrypted = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
   const authTag = cipher.getAuthTag();
-  return {
+  const res = {
     algorithm: 'AES-256-GCM',
+    kdf: 'PBKDF2WithHmacSHA256',
     keystore_alias: 'sxb_keystore_master_v1',
     iv_base64: iv.toString('base64'),
     tag_base64: authTag.toString('base64'),
-    ciphertext_base64: encrypted.toString('base64'),
-    // Pour le simulateur intégré au Dashboard, on renvoie aussi un aperçu décodé côté démo
-    _simulator_preview: payloadObj
+    ciphertext_base64: encrypted.toString('base64')
   };
+  if (includeSimulatorPreview) {
+    res._simulator_preview = payloadObj;
+  }
+  return res;
 }
 
 // Parseur intelligent d'URI V2Ray / Xray / Hysteria2 / WireGuard / DNSTT
@@ -539,14 +659,20 @@ const server = http.createServer(async (req, res) => {
         WHERE is_active = 1
         ORDER BY priority ASC
         LIMIT 20
-      `).all();
+      `).all().map(p => ({
+        id: p.id,
+        name: p.name,
+        protocol: p.protocol,
+        priority: p.priority,
+        xray_json: buildXrayJsonFromRaw(p.raw_config)
+      }));
 
       const encryptedBundle = encryptProfilesPayload({
         issued_at: now.toISOString(),
         bound_hwid: hwid,
         coupon_code: coupon.code,
         profiles: activeProfiles
-      }, hwid);
+      }, hwid, Boolean(body.simulator));
 
       logAudit('COUPON_ACTIVATED', hwid, `Activation réussie du code ${code} sur ${deviceModel} (${activeProfiles.length} profils chiffrés en AES-256-GCM)`, clientIp);
 
