@@ -2,6 +2,7 @@ package com.sxbvpn.mobile
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.Color
 import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
@@ -14,6 +15,7 @@ import kotlin.concurrent.thread
 
 /**
  * Écran principal de l'application Android SXB VPN :
+ * - Champ URL serveur modifiable (pré-rempli avec l'IP de votre PC : http://192.168.43.196:3847)
  * - Saisie du code d'accès (Coupon)
  * - Verrouillage de l'identifiant matériel (HWID)
  * - Stockage chiffré AES-256-GCM dans l'Android Keystore
@@ -21,35 +23,53 @@ import kotlin.concurrent.thread
  */
 class MainActivity : Activity() {
 
-    private lateinit var apiClient: SxbApiClient
     private var isVpnConnected = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // URL de votre Backend SXB VPN (10.0.2.2 correspond au localhost PC depuis l'émulateur Android,
-        // ou l'IP/domaine de votre serveur en production)
-        apiClient = SxbApiClient(baseUrl = "http://10.0.2.2:3847")
+        val prefs = getSharedPreferences("sxb_secure_prefs", MODE_PRIVATE)
+        val savedServerUrl = prefs.getString("server_url", "http://192.168.43.196:3847") ?: "http://192.168.43.196:3847"
+        val savedCode = prefs.getString("active_code", "SXB-DEMO-2026") ?: "SXB-DEMO-2026"
 
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(48, 64, 48, 48)
+            setBackgroundColor(Color.parseColor("#0B1120"))
         }
 
         val titleView = TextView(this).apply {
-            text = "SXB VPN"
+            text = "⚡ SXB VPN"
             textSize = 26f
+            setTextColor(Color.parseColor("#06B6D4"))
         }
         val statusView = TextView(this).apply {
             text = "Statut : Déconnecté"
-            textSize = 16f
+            textSize = 15f
+            setTextColor(Color.parseColor("#94A3B8"))
+            setPadding(0, 8, 0, 24)
+        }
+        val serverLabel = TextView(this).apply {
+            text = "Serveur de contrôle (IP PC ou Domaine) :"
+            setTextColor(Color.parseColor("#CBD5E1"))
+        }
+        val serverInput = EditText(this).apply {
+            setText(savedServerUrl)
+            setTextColor(Color.WHITE)
+        }
+        val couponLabel = TextView(this).apply {
+            text = "Code d'accès (Coupon SXB) :"
+            setTextColor(Color.parseColor("#CBD5E1"))
+            setPadding(0, 16, 0, 0)
         }
         val couponInput = EditText(this).apply {
-            hint = "Entrez votre code d'accès (ex: SXB-DEMO-2026)"
-            setText("SXB-DEMO-2026")
+            hint = "Ex: SXB-DEMO-2026"
+            setText(savedCode)
+            setTextColor(Color.WHITE)
         }
         val quotaView = TextView(this).apply {
-            text = "Quota : Non activé"
+            text = "Quota : En attente d'activation"
+            setTextColor(Color.parseColor("#38BDF8"))
             setPadding(0, 24, 0, 24)
         }
         val connectBtn = Button(this).apply {
@@ -65,11 +85,15 @@ class MainActivity : Activity() {
                 return@setOnClickListener
             }
 
+            val serverUrl = serverInput.text.toString().trim().removeSuffix("/")
             val code = couponInput.text.toString().trim()
             val hwid = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID) ?: "ANDROID-HWID"
             val model = "${Build.MANUFACTURER} ${Build.MODEL}"
 
-            statusView.text = "Vérification du code et déchiffrement des profils..."
+            prefs.edit().putString("server_url", serverUrl).putString("active_code", code).apply()
+            val apiClient = SxbApiClient(baseUrl = serverUrl)
+
+            statusView.text = "Connexion au serveur et déchiffrement AES-256-GCM..."
             thread {
                 try {
                     val res = apiClient.activateCoupon(code, hwid, model, "Android ${Build.VERSION.RELEASE}")
@@ -78,25 +102,20 @@ class MainActivity : Activity() {
                             statusView.text = "Refusé : ${res.error}"
                             Toast.makeText(this, res.error, Toast.LENGTH_LONG).show()
                         } else {
-                            // Chiffrement dans l'Android Keystore (AES-256-GCM)
                             val encryptedForKeystore = CryptoVault.encryptToLocalStore(res.decryptedProfilesJson)
-                            getSharedPreferences("sxb_secure_prefs", MODE_PRIVATE)
-                                .edit()
-                                .putString("vault_profiles", encryptedForKeystore)
-                                .putString("active_code", code)
-                                .apply()
+                            prefs.edit().putString("vault_profiles", encryptedForKeystore).apply()
 
                             val remMb = res.remainingBytes / (1024 * 1024)
                             quotaView.text = "Forfait : ${res.planName}\nQuota restant : $remMb Mo\nExpire le : ${res.expiresAt}"
                             requestAndStartVpn()
                             isVpnConnected = true
                             statusView.text = "Statut : VPN ACTIF (Chiffré AES-256-GCM)"
-                            connectBtn.text = "DÉCONNECTER"
+                            connectBtn.text = "DÉCONNECTER LE VPN"
                         }
                     }
                 } catch (e: Exception) {
                     runOnUiThread {
-                        statusView.text = "Erreur réseau : ${e.message}"
+                        statusView.text = "Erreur connexion : ${e.message}"
                     }
                 }
             }
@@ -104,6 +123,9 @@ class MainActivity : Activity() {
 
         layout.addView(titleView)
         layout.addView(statusView)
+        layout.addView(serverLabel)
+        layout.addView(serverInput)
+        layout.addView(couponLabel)
         layout.addView(couponInput)
         layout.addView(quotaView)
         layout.addView(connectBtn)
