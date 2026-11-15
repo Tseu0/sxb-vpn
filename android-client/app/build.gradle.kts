@@ -8,11 +8,11 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.sxbvpn.mobile"
-        minSdk = 23
-        targetSdk = 33
-        versionCode = 2
-        versionName = "1.0.2"
+        applicationId = "com.tseuvpn.mobile"
+        minSdk = 21
+        targetSdk = 31
+        versionCode = 3
+        versionName = "1.0.3"
     }
 
     signingConfigs {
@@ -25,6 +25,7 @@ android {
                 keyPassword = "sxbpassword2026"
                 enableV1Signing = true
                 enableV2Signing = true
+                enableV3Signing = true
             }
         }
     }
@@ -32,6 +33,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
+            isShrinkResources = false
             signingConfig = if (file("release-key.jks").exists()) {
                 signingConfigs.getByName("release")
             } else {
