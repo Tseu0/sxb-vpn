@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SXB VPN Platform — Dashboard Admin &amp; Simulateur Android</title>
+  <style>
+    :root {
+      --bg: #070d19;
+      --panel: #111b2e;
+      --panel-alt: #0b1322;
+      --border: #1f2f4a;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --accent: #06b6d4;
+      --accent-hover: #0891b2;
+      --purple: #8b5cf6;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --red: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 1.25rem;
+    }
+    .layout {
+      max-width: 1480px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 390px;
+      gap: 1.5rem;
+      align-items: start;
+    }
+    @media (max-width: 1120px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+    header.top-bar {
+      max-width: 1480px;
+      margin: 0 auto 1.25rem auto;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+    .brand-logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: #fff;
+    }
+    .brand h1 { font-size: 1.25rem; font-weight: 700; }
+    .brand p { font-size: 0.82rem; color: var(--muted); }
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 0.9rem;
+      margin-bottom: 1.25rem;
+    }
+    .stat-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.15rem;
+    }
+    .stat-label { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .stat-value { font-size: 1.55rem; font-weight: 800; color: #fff; margin-top: 0.25rem; }
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      background: var(--panel);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 0.6rem 1.1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.88rem;
+      transition: 0.15s;
+    }
+    .tab-btn.active, .tab-btn:hover {
+      background: rgba(6, 182, 212, 0.15);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.35rem;
+      margin-bottom: 1.25rem;
+    }
+    .card h2 {
+      font-size: 1.1rem;
+      color: var(--accent);
+      margin-bottom: 0.9rem;
+      padding-bottom: 0.55rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 0.9rem;
+    }
+    label {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 0.25rem;
+      font-weight: 600;
+    }
+    input, select, textarea {
+      width: 100%;
+      background: var(--panel-alt);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.55rem 0.75rem;
+      border-radius: 7px;
+      font-size: 0.88rem;
+      font-family: inherit;
+    }
+    textarea { min-height: 74px; font-family: 'Consolas', monospace; font-size: 0.82rem; }
+    button.btn {
+      background: var(--accent);
+      color: #031921;
+      border: 0;
+      padding: 0.58rem 1rem;
+      border-radius: 7px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    button.btn:hover { background: var(--accent-hover); color: #fff; }
+    button.btn-sm {
+      padding: 0.3rem 0.6rem;
+      font-size: 0.76rem;
+      border-radius: 5px;
+    }
+    button.btn-danger { background: var(--red); color: #fff; }
+    button.btn-warn { background: var(--amber); color: #1e1300; }
+    button.btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    th, td {
+      padding: 0.65rem 0.6rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th { color: var(--muted); font-size: 0.76rem; text-transform: uppercase; background: var(--panel-alt); }
+    code {
+      font-family: 'Consolas', monospace;
+      background: var(--panel-alt);
+      color: #38bdf8;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.84em;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .badge-active { background: rgba(16, 185, 129, 0.18); color: var(--green); }
+    .badge-available { background: rgba(6, 182, 212, 0.18); color: var(--accent); }
+    .badge-depleted, .badge-revoked, .badge-expired { background: rgba(239, 68, 68, 0.18); color: var(--red); }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: var(--panel-alt);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 4px;
+      border: 1px solid var(--border);
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--purple));
+      transition: width 0.3s ease;
+    }
+
+    /* SIMULATEUR ANDROID SXB VPN */
+    .phone-frame {
+      background: #050912;
+      border: 3px solid #283a5a;
+      border-radius: 28px;
+      padding: 1.15rem;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.55);
+      position: sticky;
+      top: 1.25rem;
+    }
+    .phone-notch {
+      width: 90px;
+      height: 6px;
+      background: #1e293b;
+      border-radius: 99px;
+      margin: 0 auto 0.9rem auto;
+    }
+    .phone-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.9rem;
+    }
+    .phone-title { font-weight: 800; font-size: 1rem; color: #fff; }
+    .status-pill {
+      font-size: 0.72rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 99px;
+      font-weight: 700;
+    }
+    .status-disconnected { background: rgba(148, 163, 184, 0.15); color: var(--muted); }
+    .status-connected { background: rgba(16, 185, 129, 0.2); color: var(--green); }
+    .connect-circle {
+      width: 118px;
+      height: 118px;
+      border-radius: 50%;
+      margin: 0.85rem auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: 4px solid var(--border);
+      background: radial-gradient(circle, #13233f 0%, #091120 100%);
+      transition: 0.25s;
+      user-select: none;
+    }
+    .connect-circle.active {
+      border-color: var(--green);
+      box-shadow: 0 0 28px rgba(16, 185, 129, 0.35);
+      background: radial-gradient(circle, #064e3b 0%, #091120 100%);
+    }
+    .connect-circle span.power { font-size: 1.8rem; }
+    .connect-circle span.lbl { font-size: 0.75rem; font-weight: 700; margin-top: 4px; color: #e2e8f0; }
+    .phone-box {
+      background: #0f192b;
+      border: 1px solid #1e2f4d;
+      border-radius: 10px;
+      padding: 0.75rem;
+      margin-bottom: 0.75rem;
+      font-size: 0.8rem;
+    }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+  <header class="top-bar">
+    <div class="brand">
+      <div class="brand-logo">SXB</div>
+      <div>
+        <h1>SXB VPN Control Plane &amp; Lab</h1>
+        <p>Gestionnaire de Coupons, Quotas Temps Réel, Importateur Multi-Protocole (VLESS / Hysteria2 / WireGuard / DNSTT) &amp; Simulateur Android</p>
+      </div>
+    </div>
+    <div style="display:flex; gap:0.6rem; align-items:center;">
+      <a href="/api/public/privacy" target="_blank" style="color:var(--accent); font-size:0.84rem; text-decoration:none;">Politique Google Play ↗</a>
+      <button class="btn btn-ghost btn-sm" onclick="loadOverview()">🔄 Actualiser</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- COLONNE GAUCHE : DASHBOARD ADMINISTRATEUR -->
+    <main>
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Coupons Totaux</div>
+          <div class="stat-value" id="st-total-coupons">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Tunnels / Forfaits Actifs</div>
+          <div class="stat-value" id="st-active-coupons" style="color:var(--green)">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Profils Serveurs (Max 20)</div>
+          <div class="stat-value" id="st-active-profiles" style="color:var(--accent)">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Appareils Verrouillés (HWID)</div>
+          <div class="stat-value" id="st-bound-devices" style="color:var(--purple)">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Trafic Comptabilisé</div>
+          <div class="stat-value" id="st-total-traffic">0 Mo</div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('coupons', this)">🎟️ Codes d'Accès &amp; Quotas</button>
+        <button class="tab-btn" onclick="switchTab('profiles', this)">🌐 Serveurs &amp; Importateur URI</button>
+        <button class="tab-btn" onclick="switchTab('plans', this)">📦 Forfaits &amp; Revendeurs</button>
+        <button class="tab-btn" onclick="switchTab('logs', this)">🛡️ Appareils HWID &amp; Audit</button>
+      </div>
+
+      <!-- ONGLET 1 : COUPONS & QUOTAS -->
+      <div id="tab-coupons" class="tab-pane">
+        <div class="card">
+          <h2>Générer des Codes d'Accès (Coupons Client)</h2>
+          <div class="form-grid">
+            <div>
+              <label>Forfait (Quota &amp; Durée)</label>
+              <select id="gen-plan"></select>
+            </div>
+            <div>
+              <label>Revendeur attribué</label>
+              <select id="gen-reseller"></select>
+            </div>
+            <div>
+              <label>Quantité de codes</label>
+              <input type="number" id="gen-count" value="1" min="1" max="50" />
+            </div>
+            <div style="display:flex; align-items:end;">
+              <button class="btn" style="width:100%" onclick="generateCoupons()">⚡ Générer les Coupons</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Liste des Coupons, Consommation Temps Réel &amp; Kill-Switch</h2>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Code d'Accès</th>
+                  <th>Forfait</th>
+                  <th>Statut</th>
+                  <th>Quota consommé</th>
+                  <th>Appareils (HWID)</th>
+                  <th>Expiration</th>
+                  <th>Actions Admin</th>
+                </tr>
+              </thead>
+              <tbody id="coupons-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ONGLET 2 : PROFILS & IMPORTATEUR ATOMIQUE -->
+      <div id="tab-profiles" class="tab-pane hidden">
+        <div class="card">
+          <h2>Importateur Atomique V2Ray / Xray / sing-box / Hysteria2 / WireGuard</h2>
+          <p style="font-size:0.83rem; color:var(--muted); margin-bottom:0.75rem;">
+            Collez une URI de partage (<code>vless://</code>, <code>vmess://</code>, <code>trojan://</code>, <code>ss://</code>, <code>hy2://</code>, <code>tuic://</code>) ou un bloc <code>[Interface]/[Peer]</code> WireGuard. Le serveur décodera automatiquement l'hôte, le port, le SNI et chiffrera la configuration en <strong>AES-256-GCM</strong> pour les téléphones Android.
+          </p>
+          <div style="margin-bottom:0.75rem;">
+            <label>URI de partage ou configuration complète</label>
+            <textarea id="uri-input" placeholder="vless://uuid@serveur.exemple.com:443?type=ws&security=tls&sni=zero.operateur.com&path=%2Fws#Mon-Serveur-VLESS"></textarea>
+          </div>
+          <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+            <button class="btn" onclick="importUriProfile()">📥 Décoder &amp; Importer Atomiquement</button>
+            <button class="btn btn-ghost btn-sm" onclick="fillSampleUri('vless')">Exemple VLESS-REALITY</button>
+            <button class="btn btn-ghost btn-sm" onclick="fillSampleUri('hy2')">Exemple Hysteria 2 (QUIC)</button>
+            <button class="btn btn-ghost btn-sm" onclick="fillSampleUri('wg')">Exemple WireGuard</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Configurations VPN Actives (Distribuées et Chiffrées sur Android)</h2>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Priorité</th>
+                  <th>Nom du Profil</th>
+                  <th>Protocole</th>
+                  <th>Serveur : Port</th>
+                  <th>SNI / Host Obfusqué</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="profiles-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ONGLET 3 : FORFAITS & REVENDEURS -->
+      <div id="tab-plans" class="tab-pane hidden">
+        <div class="card">
+          <h2>Créer un Nouveau Forfait (Plan)</h2>
+          <div class="form-grid">
+            <div>
+              <label>Nom du forfait</label>
+              <input type="text" id="plan-name" placeholder="Ex: Pass Semaine 5 Go" />
+            </div>
+            <div>
+              <label>Quota en Mo (1024 Mo = 1 Go)</label>
+              <input type="number" id="plan-quota" value="5120" />
+            </div>
+            <div>
+              <label>Durée (jours)</label>
+              <input type="number" id="plan-days" value="7" />
+            </div>
+            <div>
+              <label>Max Appareils (HWID)</label>
+              <input type="number" id="plan-devices" value="1" />
+            </div>
+            <div style="display:flex; align-items:end;">
+              <button class="btn" style="width:100%" onclick="createPlan()">➕ Créer le Forfait</button>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nom du Forfait</th>
+                <th>Quota</th>
+                <th>Durée</th>
+                <th>Max Appareils</th>
+                <th>Prix indicatif</th>
+              </tr>
+            </thead>
+            <tbody id="plans-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ONGLET 4 : APPAREILS VERROUILLÉS & LOGS D'AUDIT -->
+      <div id="tab-logs" class="tab-pane hidden">
+        <div class="card">
+          <h2>Appareils Android Verrouillés (HWID Binding)</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Empreinte Matérielle (HWID)</th>
+                <th>Modèle Android</th>
+                <th>Code Associé</th>
+                <th>Dernière IP</th>
+                <th>Dernière Activité</th>
+              </tr>
+            </thead>
+            <tbody id="devices-tbody"></tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <h2>Journaux d'Audit &amp; Événements Kill-Switch</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Horodatage</th>
+                <th>Événement</th>
+                <th>Acteur / HWID</th>
+                <th>Détails Techniques</th>
+              </tr>
+            </thead>
+            <tbody id="logs-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- COLONNE DROITE : SIMULATEUR INTERACTIF DE L'APPLICATION ANDROID -->
+    <aside class="phone-frame">
+      <div class="phone-notch"></div>
+      <div class="phone-header">
+        <div>
+          <div class="phone-title">📱 SXB VPN Android</div>
+          <div style="font-size:0.7rem; color:var(--muted);">Simulateur Client v1.0 (VpnService)</div>
+        </div>
+        <span id="sim-status-pill" class="status-pill status-disconnected">DÉCONNECTÉ</span>
+      </div>
+
+      <!-- BOUTON CONNEXION 1-TAP -->
+      <div id="sim-connect-btn" class="connect-circle" onclick="toggleSimulatedVpn()">
+        <span class="power">⚡</span>
+        <span class="lbl" id="sim-connect-lbl">CONNECTER</span>
+      </div>
+
+      <!-- SAISIE DU CODE D'ACCÈS & HWID -->
+      <div class="phone-box">
+        <label>Code d'accès client (Coupon SXB)</label>
+        <div style="display:flex; gap:0.4rem; margin-bottom:0.5rem;">
+          <input type="text" id="sim-code" value="SXB-DEMO-2026" style="font-family:monospace; font-weight:700;" />
+          <button class="btn btn-sm" onclick="simActivateCoupon()">Activer</button>
+        </div>
+        <label>Appareil simulé (Test du verrouillage HWID)</label>
+        <select id="sim-device-select" onchange="onSimDeviceChange()">
+          <option value="HWID-SAMSUNG-S24-99A1|Samsung Galaxy S24">📱 Téléphone #1 : Samsung S24 (HWID-99A1)</option>
+          <option value="HWID-REDMI-NOTE13-77B2|Xiaomi Redmi Note 13">📱 Téléphone #2 : Redmi Note 13 (HWID-77B2)</option>
+          <option value="HWID-TECNO-SPARK-55C3|Tecno Spark 20">📱 Téléphone #3 : Tecno Spark 20 (HWID-55C3)</option>
+        </select>
+      </div>
+
+      <!-- JAUGE DE QUOTA & EXPIRATION DANS L'APP -->
+      <div class="phone-box">
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+          <span style="color:var(--muted);">Forfait actif :</span>
+          <strong id="sim-plan-name">Non activé</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:0.75rem;">
+          <span>Quota utilisé : <strong id="sim-used-text">0 Mo</strong></span>
+          <span>Restant : <strong id="sim-rem-text" style="color:var(--accent)">0 Mo</strong></span>
+        </div>
+        <div class="progress-bar">
+          <div id="sim-quota-bar" class="progress-fill" style="width:0%"></div>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:0.73rem; color:var(--muted);">
+          <span>Expiration :</span>
+          <span id="sim-expires-text">—</span>
+        </div>
+      </div>
+
+      <!-- SÉLECTEUR DE PROFIL DÉCHIFFRÉ (JUSQU'À 20) -->
+      <div class="phone-box">
+        <label>Configuration active (Chiffrée AES-256-GCM)</label>
+        <select id="sim-profile-select" style="margin-bottom:0.4rem;">
+          <option>Activez un code pour importer les profils...</option>
+        </select>
+        <div id="sim-crypto-badge" style="font-size:0.7rem; color:var(--muted);">
+          🔒 Android Keystore : En attente d'importation
+        </div>
+      </div>
+
+      <!-- SIMULATION DE TRAFIC & TEST DU KILL-SWITCH -->
+      <div class="phone-box">
+        <label>Simuler de la consommation de données :</label>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.35rem; margin-top:0.35rem;">
+          <button class="btn btn-ghost btn-sm" onclick="simConsumeTraffic(256)">+ 256 Mo</button>
+          <button class="btn btn-ghost btn-sm" onclick="simConsumeTraffic(1024)">+ 1 Go</button>
+          <button class="btn btn-warn btn-sm" onclick="simConsumeTraffic(25000)">Épuiser (Kill)</button>
+        </div>
+      </div>
+
+      <div id="sim-log-box" style="font-family:Consolas,monospace; font-size:0.72rem; color:#38bdf8; background:#030712; padding:0.65rem; border-radius:8px; border:1px solid #1e293b; min-height:64px;">
+        [Système] Prêt. Cliquez sur "Activer" ou sur le bouton central pour lancer le tunnel.
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    let currentOverview = null;
+    let simConnected = false;
+    let simActivated = false;
+
+    function formatBytes(bytes) {
+      const b = Number(bytes) || 0;
+      if (b >= 1024 * 1024 * 1024) return (b / (1024 * 1024 * 1024)).toFixed(2) + ' Go';
+      return (b / (1024 * 1024)).toFixed(0) + ' Mo';
+    }
+
+    function simLog(msg, isError = false) {
+      const box = document.getElementById('sim-log-box');
+      box.style.color = isError ? '#f87171' : '#38bdf8';
+      box.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    }
+
+    function switchTab(tabName, btn) {
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
+      document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    async function loadOverview() {
+      const res = await fetch('/api/admin/overview');
+      const data = await res.json();
+      currentOverview = data;
+
+      document.getElementById('st-total-coupons').textContent = data.stats.total_coupons;
+      document.getElementById('st-active-coupons').textContent = data.stats.active_coupons;
+      document.getElementById('st-active-profiles').textContent = data.stats.active_profiles;
+      document.getElementById('st-bound-devices').textContent = data.stats.bound_devices;
+      document.getElementById('st-total-traffic').textContent = formatBytes(data.stats.total_traffic_bytes);
+
+      // Remplir les listes déroulantes
+      const planSelect = document.getElementById('gen-plan');
+      planSelect.innerHTML = data.plans.map(p =>
+        `<option value="${p.id}">${p.name} (${formatBytes(p.quota_mb * 1024 * 1024)} / ${p.duration_days}j / ${p.max_devices} app.)</option>`
+      ).join('');
+
+      const resellerSelect = document.getElementById('gen-reseller');
+      resellerSelect.innerHTML = data.resellers.map(r =>
+        `<option value="${r.id}">${r.name}</option>`
+      ).join('');
+
+      // Tableau des coupons
+      const couponsTbody = document.getElementById('coupons-tbody');
+      couponsTbody.innerHTML = data.coupons.map(c => {
+        const used = c.used_up_bytes + c.used_down_bytes;
+        const pct = Math.min(100, Math.round((used / c.quota_bytes) * 100));
+        return `
+          <tr>
+            <td>
+              <code style="cursor:pointer; font-weight:700;" onclick="useCodeInSimulator('${c.code}')" title="Cliquer pour tester dans le téléphone">${c.code}</code>
+            </td>
+            <td>${c.plan_name || 'Forfait'}</td>
+            <td><span class="badge badge-${c.status}">${c.status}</span></td>
+            <td style="min-width:160px;">
+              <div style="font-size:0.76rem;">${formatBytes(used)} / ${formatBytes(c.quota_bytes)} (${pct}%)</div>
+              <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+            </td>
+            <td>${c.bound_devices} / ${c.max_devices}</td>
+            <td style="font-size:0.78rem; color:var(--muted);">${c.expires_at ? new Date(c.expires_at).toLocaleDateString() : 'Non activé'}</td>
+            <td>
+              <div style="display:flex; gap:0.35rem;">
+                <button class="btn btn-sm" onclick="useCodeInSimulator('${c.code}')">📱 Tester</button>
+                <button class="btn btn-warn btn-sm" onclick="couponAction(${c.id}, 'reset')">Réinit.</button>
+                <button class="btn btn-danger btn-sm" onclick="couponAction(${c.id}, 'revoke')">Bloquer</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // Tableau des profils VPN
+      const profilesTbody = document.getElementById('profiles-tbody');
+      profilesTbody.innerHTML = data.profiles.map(p => `
+        <tr>
+          <td>#${p.priority}</td>
+          <td><strong>${p.name}</strong></td>
+          <td><code>${p.protocol}</code></td>
+          <td><code>${p.server_host}:${p.server_port}</code></td>
+          <td><code>${p.sni_host || '—'}</code></td>
+          <td>
+            <button class="btn btn-danger btn-sm" onclick="deleteProfile(${p.id})">Supprimer</button>
+          </td>
+        </tr>
+      `).join('');
+
+      // Tableau des forfaits
+      document.getElementById('plans-tbody').innerHTML = data.plans.map(p => `
+        <tr>
+          <td>#${p.id}</td>
+          <td><strong>${p.name}</strong></td>
+          <td>${formatBytes(p.quota_mb * 1024 * 1024)}</td>
+          <td>${p.duration_days} jour(s)</td>
+          <td>${p.max_devices} appareil(s)</td>
+          <td>${p.price_cfa} FCFA</td>
+        </tr>
+      `).join('');
+
+      // Tableau des appareils verrouillés
+      document.getElementById('devices-tbody').innerHTML = data.devices.length ? data.devices.map(d => `
+        <tr>
+          <td><code>${d.hwid}</code></td>
+          <td>${d.device_model} (${d.android_version})</td>
+          <td><code>${d.coupon_code}</code></td>
+          <td>${d.last_ip}</td>
+          <td style="font-size:0.78rem; color:var(--muted);">${new Date(d.last_seen_at).toLocaleString()}</td>
+        </tr>
+      `).join('') : `<tr><td colspan="5" style="color:var(--muted);">Aucun appareil verrouillé pour le moment.</td></tr>`;
+
+      // Tableau des logs
+      document.getElementById('logs-tbody').innerHTML = data.logs.map(l => `
+        <tr>
+          <td style="font-size:0.75rem; color:var(--muted);">${new Date(l.created_at).toLocaleTimeString()}</td>
+          <td><code>${l.event_type}</code></td>
+          <td><strong>${l.actor}</strong></td>
+          <td style="font-size:0.8rem;">${l.details}</td>
+        </tr>
+      `).join('');
+    }
+
+    async function generateCoupons() {
+      const plan_id = document.getElementById('gen-plan').value;
+      const reseller_id = document.getElementById('gen-reseller').value;
+      const count = document.getElementById('gen-count').value;
+      const res = await fetch('/api/admin/coupons/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan_id, reseller_id, count })
+      });
+      const data = await res.json();
+      if (data.ok && data.codes.length) {
+        document.getElementById('sim-code').value = data.codes[0];
+        simLog(`Nouveau code généré et copié dans le téléphone : ${data.codes[0]}`);
+        await loadOverview();
+      }
+    }
+
+    async function couponAction(coupon_id, action) {
+      await fetch('/api/admin/coupons/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ coupon_id, action })
+      });
+      await loadOverview();
+    }
+
+    function fillSampleUri(type) {
+      const el = document.getElementById('uri-input');
+      if (type === 'vless') {
+        el.value = 'vless://7c881122-99bb-4a11-88cc-112233445566@195.201.88.10:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.apple.com&fp=chrome&pbk=kL9mN2pQ4rS6tU8vW0xY2zA4bC6dE8fG0hI2jK4lM6n#UK-Londres-REALITY';
+      } else if (type === 'hy2') {
+        el.value = 'hy2://sxb_turbo_2026@us-ny.sxb-node.example:8443?insecure=0&sni=www.cloudflare.com&obfs=salamander#US-NewYork-Hysteria2';
+      } else if (type === 'wg') {
+        el.value = '[Interface]\nPrivateKey = YAnZ5...==\nAddress = 10.66.66.2/32\nDNS = 1.1.1.1\n\n[Peer]\nPublicKey = xTIBA5rboUvnH4htodjb6e697QjLERt1NAB4mZqp8Dg=\nEndpoint = 141.95.12.34:51820\nAllowedIPs = 0.0.0.0/0';
+      }
+    }
+
+    async function importUriProfile() {
+      const uri_import = document.getElementById('uri-input').value;
+      const res = await fetch('/api/admin/profiles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uri_import, priority: 2 })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Erreur d\'importation');
+        return;
+      }
+      document.getElementById('uri-input').value = '';
+      await loadOverview();
+      simLog(`Profil "${data.profile.name}" importé et prêt pour le chiffrement Android.`);
+    }
+
+    async function deleteProfile(id) {
+      await fetch(`/api/admin/profiles/${id}`, { method: 'DELETE' });
+      await loadOverview();
+    }
+
+    async function createPlan() {
+      const name = document.getElementById('plan-name').value;
+      const quota_mb = document.getElementById('plan-quota').value;
+      const duration_days = document.getElementById('plan-days').value;
+      const max_devices = document.getElementById('plan-devices').value;
+      await fetch('/api/admin/plans', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, quota_mb, duration_days, max_devices, price_cfa: 1500 })
+      });
+      await loadOverview();
+    }
+
+    // LOGIQUE DU SIMULATEUR ANDROID SXB VPN
+    function useCodeInSimulator(code) {
+      document.getElementById('sim-code').value = code;
+      simActivateCoupon();
+    }
+
+    function getSelectedDevice() {
+      const val = document.getElementById('sim-device-select').value;
+      const [hwid, device_model] = val.split('|');
+      return { hwid, device_model };
+    }
+
+    function onSimDeviceChange() {
+      if (simConnected) setSimVpnState(false);
+      simLog('Changement de téléphone détecté. Cliquez sur "Activer" pour tester le contrôle HWID.');
+    }
+
+    function updateSimQuotaUi(session) {
+      document.getElementById('sim-plan-name').textContent = session.plan_name || 'Forfait SXB';
+      document.getElementById('sim-used-text').textContent = formatBytes(session.used_bytes);
+      document.getElementById('sim-rem-text').textContent = formatBytes(session.remaining_bytes);
+      const pct = Math.min(100, Math.round((session.used_bytes / session.quota_bytes) * 100));
+      document.getElementById('sim-quota-bar').style.width = `${pct}%`;
+      document.getElementById('sim-expires-text').textContent = session.expires_at
+        ? new Date(session.expires_at).toLocaleString()
+        : '—';
+    }
+
+    function setSimVpnState(connected) {
+      simConnected = connected;
+      const circle = document.getElementById('sim-connect-btn');
+      const pill = document.getElementById('sim-status-pill');
+      const lbl = document.getElementById('sim-connect-lbl');
+      if (connected) {
+        circle.classList.add('active');
+        pill.className = 'status-pill status-connected';
+        pill.textContent = 'VPN ACTIF';
+        lbl.textContent = 'CONNECTÉ';
+      } else {
+        circle.classList.remove('active');
+        pill.className = 'status-pill status-disconnected';
+        pill.textContent = 'DÉCONNECTÉ';
+        lbl.textContent = 'CONNECTER';
+      }
+    }
+
+    async function simActivateCoupon() {
+      const code = document.getElementById('sim-code').value;
+      const { hwid, device_model } = getSelectedDevice();
+      const res = await fetch('/api/v1/mobile/activate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, hwid, device_model, android_version: 'Android 14' })
+      });
+      const data = await res.json();
+      await loadOverview();
+
+      if (!res.ok) {
+        setSimVpnState(false);
+        simActivated = false;
+        simLog(`REFUS SERVEUR : ${data.error}`, true);
+        return false;
+      }
+
+      simActivated = true;
+      updateSimQuotaUi(data.session);
+
+      const profiles = data.encrypted_profiles_bundle._simulator_preview.profiles;
+      const select = document.getElementById('sim-profile-select');
+      select.innerHTML = profiles.map(p =>
+        `<option value="${p.id}">[${p.protocol.toUpperCase()}] ${p.name}</option>`
+      ).join('');
+
+      const cipherPreview = data.encrypted_profiles_bundle.ciphertext_base64.slice(0, 22) + '...';
+      document.getElementById('sim-crypto-badge').innerHTML =
+        `🔒 <strong>AES-256-GCM</strong> (${profiles.length} profils) | Cipher: <code>${cipherPreview}</code>`;
+
+      simLog(`Code ${code} activé sur ${device_model}. ${profiles.length} profils déchiffrés dans l'Android Keystore.`);
+      return true;
+    }
+
+    async function toggleSimulatedVpn() {
+      if (simConnected) {
+        setSimVpnState(false);
+        simLog('Tunnel Android VpnService arrêté par l\'utilisateur.');
+        return;
+      }
+      const ok = await simActivateCoupon();
+      if (ok) {
+        setSimVpnState(true);
+        const profName = document.getElementById('sim-profile-select').selectedOptions[0]?.text || 'Profil #1';
+        simLog(`Interface TUN montée. Trafic routé via ${profName}.`);
+      }
+    }
+
+    async function simConsumeTraffic(megabytes) {
+      if (!simActivated) {
+        const ok = await simActivateCoupon();
+        if (!ok) return;
+      }
+      const code = document.getElementById('sim-code').value;
+      const { hwid } = getSelectedDevice();
+      const bytes = megabytes * 1024 * 1024;
+      const res = await fetch('/api/v1/mobile/sync-traffic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code,
+          hwid,
+          delta_up_bytes: Math.round(bytes * 0.15),
+          delta_down_bytes: Math.round(bytes * 0.85)
+        })
+      });
+      const data = await res.json();
+      await loadOverview();
+
+      if (data.session) updateSimQuotaUi(data.session);
+
+      if (data.kill_switch) {
+        setSimVpnState(false);
+        simLog(`🛑 KILL-SWITCH DÉCLENCHÉ : ${data.reason}`, true);
+      } else {
+        if (!simConnected) setSimVpnState(true);
+        simLog(`Synchronisation quota OK (+${megabytes} Mo). Tunnel actif.`);
+      }
+    }
+
+    // Chargement initial
+    loadOverview();
+  </script>
+</body>
+</html>

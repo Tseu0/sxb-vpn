@@ -1,0 +1,10 @@
+# Base de données locale SQLite
+sxb.db
+sxb.db-shm
+sxb.db-wal
+
+# Fichiers temporaires Android / Gradle
+android-client/.gradle/
+android-client/build/
+android-client/app/build/
+android-client/local.properties

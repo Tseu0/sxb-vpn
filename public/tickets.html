@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Planche de Tickets / Coupons Imprimables — SXB VPN</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #f1f5f9;
+      color: #0f172a;
+      padding: 1.5rem;
+    }
+    .toolbar {
+      max-width: 960px;
+      margin: 0 auto 1.5rem auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0f172a;
+      color: #fff;
+      padding: 1rem 1.25rem;
+      border-radius: 10px;
+    }
+    .btn {
+      background: #06b6d4;
+      color: #04202a;
+      border: 0;
+      padding: 0.6rem 1.1rem;
+      border-radius: 6px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .grid {
+      max-width: 960px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    .ticket {
+      background: #fff;
+      border: 2px dashed #334155;
+      border-radius: 10px;
+      padding: 1rem;
+      position: relative;
+    }
+    .ticket-brand {
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: #0891b2;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .ticket-plan {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin: 0.2rem 0 0.6rem 0;
+    }
+    .ticket-code {
+      font-family: 'Consolas', monospace;
+      font-size: 1.2rem;
+      font-weight: 800;
+      background: #0f172a;
+      color: #38bdf8;
+      text-align: center;
+      padding: 0.5rem;
+      border-radius: 6px;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.6rem;
+    }
+    .ticket-meta {
+      font-size: 0.78rem;
+      color: #475569;
+      display: flex;
+      justify-content: space-between;
+    }
+    @media print {
+      .toolbar { display: none; }
+      body { background: #fff; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <div>
+      <strong>🎟️ Générateur de Planches de Coupons Imprimables (Revendeurs SXB VPN)</strong>
+    </div>
+    <button class="btn" onclick="window.print()">🖨️ Imprimer / Enregistrer en PDF</button>
+  </div>
+  <div id="tickets-grid" class="grid">Chargement des coupons...</div>
+
+  <script>
+    async function loadTickets() {
+      const res = await fetch('http://localhost:3847/api/admin/overview');
+      const data = await res.json();
+      const grid = document.getElementById('tickets-grid');
+      const available = data.coupons.filter(c => c.status === 'available' || c.status === 'active');
+      grid.innerHTML = available.map(c => {
+        const gb = (c.quota_bytes / (1024 * 1024 * 1024)).toFixed(1);
+        return `
+          <div class="ticket">
+            <div class="ticket-brand">SXB VPN — Code d'Accès Officiel</div>
+            <div class="ticket-plan">${c.plan_name || 'Forfait SXB'}</div>
+            <div class="ticket-code">${c.code}</div>
+            <div class="ticket-meta">
+              <span>Volume : <strong>${gb} Go</strong></span>
+              <span>Validité : <strong>${c.duration_days} jour(s)</strong></span>
+              <span>Max : <strong>${c.max_devices} app.</strong></span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    loadTickets();
+  </script>
+</body>
+</html>
