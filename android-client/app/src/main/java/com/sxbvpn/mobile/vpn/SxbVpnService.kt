@@ -6,9 +6,11 @@ import android.app.NotificationManager
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.Network
+import android.net.TrafficStats
 import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
+import android.os.Process
 import com.sxbvpn.mobile.network.SxbApiClient
 import com.sxbvpn.mobile.security.CryptoVault
 import libv2ray.CoreCallbackHandler
@@ -153,9 +155,14 @@ class SxbVpnService : VpnService() {
         val apiClient = SxbApiClient(activeServerUrl)
         statsTask = scheduler.scheduleWithFixedDelay({
             try {
-                val ctrl = coreController ?: return@scheduleWithFixedDelay
-                val totalUp = ctrl.queryStats("proxy", "uplink")
-                val totalDown = ctrl.queryStats("proxy", "downlink")
+                if (coreController == null) return@scheduleWithFixedDelay
+                val uid = Process.myUid()
+                val totalUp = TrafficStats.getUidTxBytes(uid).coerceAtLeast(0L)
+                val totalDown = TrafficStats.getUidRxBytes(uid).coerceAtLeast(0L)
+                if (lastReportedUp == 0L && lastReportedDown == 0L) {
+                    lastReportedUp = totalUp
+                    lastReportedDown = totalDown
+                }
                 val deltaUp = (totalUp - lastReportedUp).coerceAtLeast(0L)
                 val deltaDown = (totalDown - lastReportedDown).coerceAtLeast(0L)
                 lastReportedUp = totalUp
