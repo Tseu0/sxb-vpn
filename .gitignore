@@ -3,6 +3,12 @@ sxb.db
 sxb.db-shm
 sxb.db-wal
 
+# Binaires et archives locales
+*.exe
+*.zip
+*.apk
+*.jar
+
 # Fichiers temporaires Android / Gradle
 android-client/.gradle/
 android-client/build/

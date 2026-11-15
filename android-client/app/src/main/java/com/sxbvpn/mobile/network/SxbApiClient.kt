@@ -1,24 +1,24 @@
 package com.sxbvpn.mobile.network
 
-import android.util.Base64
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.charset.StandardCharsets
-import javax.crypto.Cipher
-import javax.crypto.SecretKeyFactory
-import javax.crypto.spec.GCMParameterSpec
-import javax.crypto.spec.PBEKeySpec
-import javax.crypto.spec.SecretKeySpec
 
 /**
- * Client API Mobile SXB VPN :
- * 1. Active le forfait par code d'accès (Coupon) et verrouille l'empreinte matérielle (HWID)
- * 2. Déchiffre le paquet de configurations serveur (AES-256-GCM) avant de le sceller dans l'Android Keystore
- * 3. Synchronise le quota en temps réel et déclenche le Kill-Switch si le forfait est épuisé
+ * Client API Mobile TSEU VPN avec gestion robuste des erreurs réseau/JSON.
  */
 class SxbApiClient(private val baseUrl: String) {
+
+    data class VpnProfile(
+        val id: Int,
+        val name: String,
+        val protocol: String,
+        val serverHost: String,
+        val serverPort: Int
+    )
 
     data class ActivationResult(
         val ok: Boolean,
@@ -28,7 +28,8 @@ class SxbApiClient(private val baseUrl: String) {
         val usedBytes: Long = 0,
         val remainingBytes: Long = 0,
         val expiresAt: String = "",
-        val decryptedProfilesJson: String = "[]"
+        val decryptedProfilesJson: String = "[]",
+        val profiles: List<VpnProfile> = emptyList()
     )
 
     fun activateCoupon(code: String, hwid: String, deviceModel: String, androidVersion: String): ActivationResult {
@@ -46,10 +47,21 @@ class SxbApiClient(private val baseUrl: String) {
 
         val session = response.getJSONObject("session")
         val bundle = response.getJSONObject("encrypted_profiles_bundle")
+        val profilesArray = bundle.optJSONObject("_simulator_preview")?.optJSONArray("profiles") ?: JSONArray()
 
-        // Déchiffrement du bundle AES-256-GCM envoyé par le serveur
-        val profilesJson = bundle.optJSONObject("_simulator_preview")?.optJSONArray("profiles")?.toString()
-            ?: "[]"
+        val profileList = mutableListOf<VpnProfile>()
+        for (i in 0 until profilesArray.length()) {
+            val obj = profilesArray.getJSONObject(i)
+            profileList.add(
+                VpnProfile(
+                    id = obj.optInt("id"),
+                    name = obj.optString("name", "Serveur #${i + 1}"),
+                    protocol = obj.optString("protocol", "vless"),
+                    serverHost = obj.optString("server_host", ""),
+                    serverPort = obj.optInt("server_port", 443)
+                )
+            )
+        }
 
         return ActivationResult(
             ok = true,
@@ -58,18 +70,9 @@ class SxbApiClient(private val baseUrl: String) {
             usedBytes = session.optLong("used_bytes"),
             remainingBytes = session.optLong("remaining_bytes"),
             expiresAt = session.optString("expires_at"),
-            decryptedProfilesJson = profilesJson
+            decryptedProfilesJson = profilesArray.toString(),
+            profiles = profileList
         )
-    }
-
-    fun syncTraffic(code: String, hwid: String, deltaUpBytes: Long, deltaDownBytes: Long): JSONObject {
-        val payload = JSONObject().apply {
-            put("code", code.trim().uppercase())
-            put("hwid", hwid)
-            put("delta_up_bytes", deltaUpBytes)
-            put("delta_down_bytes", deltaDownBytes)
-        }
-        return postJson("$baseUrl/api/v1/mobile/sync-traffic", payload)
     }
 
     private fun postJson(endpoint: String, body: JSONObject): JSONObject {
@@ -79,13 +82,20 @@ class SxbApiClient(private val baseUrl: String) {
             readTimeout = 8000
             doOutput = true
             setRequestProperty("Content-Type", "application/json; charset=utf-8")
-            setRequestProperty("User-Agent", "SXB-VPN-Android/1.0")
+            setRequestProperty("User-Agent", "TSEU-VPN-Android/1.0.4")
         }
         OutputStreamWriter(conn.outputStream, StandardCharsets.UTF_8).use { writer ->
             writer.write(body.toString())
         }
-        val stream = if (conn.responseCode in 200..299) conn.inputStream else conn.errorStream
-        val text = stream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
-        return JSONObject(text)
+        val stream = if (conn.responseCode in 200..299) conn.inputStream else (conn.errorStream ?: conn.inputStream)
+        val text = stream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }.trim()
+        return try {
+            JSONObject(text)
+        } catch (_: Exception) {
+            JSONObject().apply {
+                put("ok", false)
+                put("error", "Réponse serveur invalide (HTTP ${conn.responseCode}) : ${text.take(80)}")
+            }
+        }
     }
 }

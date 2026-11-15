@@ -11,8 +11,8 @@ android {
         applicationId = "com.tseuvpn.mobile"
         minSdk = 21
         targetSdk = 33
-        versionCode = 3
-        versionName = "1.0.3"
+        versionCode = 4
+        versionName = "1.0.4"
     }
 
     lint {
