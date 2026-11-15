@@ -1,8 +1,8 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Planche de Tickets / Coupons Imprimables — SXB VPN</title>
+  <title>Planche de Tickets / Coupons Imprimables — TSEU VPN</title>
   <style>
     body {
       font-family: 'Segoe UI', system-ui, sans-serif;
@@ -83,7 +83,7 @@
 <body>
   <div class="toolbar">
     <div>
-      <strong>🎟️ Générateur de Planches de Coupons Imprimables (Revendeurs SXB VPN)</strong>
+      <strong>🎟️ Générateur de Planches de Coupons Imprimables (Revendeurs TSEU VPN)</strong>
     </div>
     <button class="btn" onclick="window.print()">🖨️ Imprimer / Enregistrer en PDF</button>
   </div>
@@ -99,7 +99,7 @@
         const gb = (c.quota_bytes / (1024 * 1024 * 1024)).toFixed(1);
         return `
           <div class="ticket">
-            <div class="ticket-brand">SXB VPN — Code d'Accès Officiel</div>
+            <div class="ticket-brand">TSEU VPN — Code d'Accès Officiel</div>
             <div class="ticket-plan">${c.plan_name || 'Forfait SXB'}</div>
             <div class="ticket-code">${c.code}</div>
             <div class="ticket-meta">
@@ -115,3 +115,4 @@
   </script>
 </body>
 </html>
+

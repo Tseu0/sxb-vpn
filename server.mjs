@@ -1,4 +1,4 @@
-import http from 'node:http';
+﻿import http from 'node:http';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -178,7 +178,7 @@ if (planCount === 0) {
   insertCoupon.run('SXB-TEST-1G00', 1, 1, 1024 * 1024 * 1024, 1, 1, now);
   insertCoupon.run('SXB-VIP9-9999', 3, 1, 51200 * 1024 * 1024, 30, 2, now);
 
-  logAudit('INIT_SYSTEM', 'SYSTEM', 'Base de données SXB VPN initialisée avec les profils multi-protocoles et coupons de démo.');
+  logAudit('INIT_SYSTEM', 'SYSTEM', 'Base de données TSEU VPN initialisée avec les profils multi-protocoles et coupons de démo.');
 }
 
 // Chiffrement AES-256-GCM des profils pour l'application Android (Boîte noire)
@@ -256,7 +256,7 @@ function parseVpnUri(rawInput) {
 function generateCouponCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   const seg = () => Array.from({ length: 4 }, () => chars[crypto.randomInt(0, chars.length)]).join('');
-  return `SXB-${seg()}-${seg()}`;
+  return `TSEU-${seg()}-${seg()}`;
 }
 
 function readJsonBody(req) {
@@ -532,7 +532,7 @@ const server = http.createServer(async (req, res) => {
           last_seen_at = excluded.last_seen_at
       `).run(coupon.id, hwid, deviceModel, androidVersion, clientIp, now.toISOString());
 
-      // Récupération des profils actifs (jusqu'à 20 configurations comme SXB VPN)
+      // Récupération des profils actifs (jusqu'à 20 configurations comme TSEU VPN)
       const activeProfiles = db.prepare(`
         SELECT id, name, protocol, server_host, server_port, sni_host, raw_config, priority
         FROM profiles
@@ -647,7 +647,7 @@ const server = http.createServer(async (req, res) => {
     // 8. PAGES RÉGLEMENTAIRES GOOGLE PLAY (Privacy Policy & Data Deletion)
     if (req.method === 'GET' && pathname === '/api/public/privacy') {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      return res.end(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Politique de Confidentialité — SXB VPN</title>
+      return res.end(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Politique de Confidentialité — TSEU VPN</title>
       <style>body{font-family:system-ui,sans-serif;max-width:740px;margin:2rem auto;padding:0 1rem;line-height:1.6;background:#0f172a;color:#f1f5f9}section{background:#1e293b;padding:1.25rem;border-radius:8px;margin-bottom:1rem;border:1px solid #334155}h1,h2{color:#06b6d4}</style></head>
       <body><h1>Politique de Confidentialité (Conforme Google Play VpnService)</h1>
       <section><h2>1. Service VPN et données collectées</h2><p>L'application utilise exclusivement l'API <code>android.net.VpnService</code> pour établir un tunnel chiffré vers le serveur choisi. Seuls le code d'activation, un identifiant matériel pseudonymisé (HWID) et les compteurs de volume montant/descendant sont traités pour gérer votre forfait.</p></section>
@@ -671,8 +671,9 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`\n=============================================================`);
-  console.log(`🚀 SXB VPN PLATFORM (CONTROL PLANE + SIMULATEUR) EN LIGNE !`);
+  console.log(`🚀 TSEU VPN PLATFORM (CONTROL PLANE + SIMULATEUR) EN LIGNE !`);
   console.log(`👉 Dashboard Admin & Simulateur : http://localhost:${PORT}`);
   console.log(`👉 Politique Confidentialité    : http://localhost:${PORT}/api/public/privacy`);
   console.log(`=============================================================\n`);
 });
+

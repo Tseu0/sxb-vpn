@@ -9,14 +9,14 @@
     <application
         android:allowBackup="false"
         android:icon="@android:drawable/ic_lock_lock"
-        android:label="SXB VPN"
+        android:label="TSEU VPN"
         android:usesCleartextTraffic="true"
         android:supportsRtl="true">
 
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:label="SXB VPN">
+            android:label="TSEU VPN">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

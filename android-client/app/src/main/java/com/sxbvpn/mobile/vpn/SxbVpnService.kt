@@ -11,10 +11,7 @@ import android.os.Build
 import android.os.ParcelFileDescriptor
 
 /**
- * Service VPN natif Android (android.net.VpnService)
- * - Monte l'interface virtuelle TUN
- * - Démarre le moteur multi-protocole (Xray / sing-box)
- * - Assure la reconnexion automatique et la bascule (Failover) sur les 20 profils enregistrés
+ * Service VPN natif Android TSEU VPN (android.net.VpnService)
  */
 class SxbVpnService : VpnService() {
 
@@ -25,7 +22,7 @@ class SxbVpnService : VpnService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_CONNECT -> {
-                startForeground(NOTIFICATION_ID, buildStatusNotification("Connexion au serveur SXB VPN..."))
+                startForeground(NOTIFICATION_ID, buildStatusNotification("Connexion au serveur TSEU VPN..."))
                 establishTunnel()
                 registerAutoReconnectCallback()
             }
@@ -39,15 +36,15 @@ class SxbVpnService : VpnService() {
     private fun establishTunnel() {
         try {
             val builder = Builder()
-                .setSession("SXB VPN Tunnel")
+                .setSession("TSEU VPN Tunnel")
                 .setMtu(1400)
                 .addAddress("10.66.66.2", 30)
                 .addRoute("0.0.0.0", 0)
-                .addDnsServer("1.1.1.1") // Cloudflare DNS
-                .addDisallowedApplication(packageName) // Évite la boucle infinie du trafic VPN
+                .addDnsServer("1.1.1.1")
+                .addDisallowedApplication(packageName)
 
             tunInterface = builder.establish()
-            updateNotification("SXB VPN Actif — Trafic chiffré (AES-256-GCM)")
+            updateNotification("TSEU VPN Actif — Trafic chiffré (AES-256-GCM)")
         } catch (e: Exception) {
             failoverToNextProfile()
         }
@@ -56,7 +53,7 @@ class SxbVpnService : VpnService() {
     private fun failoverToNextProfile() {
         if (savedEncryptedProfiles.isEmpty()) return
         currentProfileIndex = (currentProfileIndex + 1) % savedEncryptedProfiles.size
-        updateNotification("Basculement automatique sur le profil de secours #${currentProfileIndex + 1}...")
+        updateNotification("Basculement automatique TSEU VPN sur le profil #${currentProfileIndex + 1}...")
         establishTunnel()
     }
 
@@ -84,9 +81,9 @@ class SxbVpnService : VpnService() {
     }
 
     private fun buildStatusNotification(text: String): Notification {
-        val channelId = "sxb_vpn_channel"
+        val channelId = "tseu_vpn_channel"
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(channelId, "Statut SXB VPN", NotificationManager.IMPORTANCE_LOW)
+            val channel = NotificationChannel(channelId, "Statut TSEU VPN", NotificationManager.IMPORTANCE_LOW)
             getSystemService(NotificationManager::class.java)?.createNotificationChannel(channel)
         }
         val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -96,7 +93,7 @@ class SxbVpnService : VpnService() {
             Notification.Builder(this)
         }
         return builder
-            .setContentTitle("SXB VPN")
+            .setContentTitle("TSEU VPN")
             .setContentText(text)
             .setSmallIcon(android.R.drawable.ic_lock_lock)
             .setOngoing(true)

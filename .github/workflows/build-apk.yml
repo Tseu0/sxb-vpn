@@ -1,4 +1,4 @@
-name: Compiler APK Android SXB VPN (Release Signee)
+﻿name: Compiler APK Android TSEU VPN (Release Signee)
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-apk:
-    name: Build SXB VPN Release APK
+    name: Build TSEU VPN Release APK
     runs-on: ubuntu-latest
 
     steps:
@@ -31,7 +31,7 @@ jobs:
             -validity 10000 \
             -storepass sxbpassword2026 \
             -keypass sxbpassword2026 \
-            -dname "CN=SXB Telecom, OU=Mobile, O=SXB, L=Paris, S=IDF, C=FR"
+            -dname "CN=TSEU VPN Official, OU=Mobile, O=SXB, L=Paris, S=IDF, C=FR"
 
       - name: 4. Configuration automatique de Gradle 8.7
         uses: gradle/actions/setup-gradle@v4
@@ -45,5 +45,6 @@ jobs:
       - name: 6. Publication de l'APK Release prêt à installer
         uses: actions/upload-artifact@v4
         with:
-          name: SXB-VPN-Release-APK
+          name: TSEU-VPN-Release-APK
           path: android-client/app/build/outputs/apk/release/*.apk
+

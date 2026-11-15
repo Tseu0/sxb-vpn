@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SXB VPN Platform — Dashboard Admin &amp; Simulateur Android</title>
+  <title>TSEU VPN Platform — Dashboard Admin &amp; Simulateur Android</title>
   <style>
     :root {
       --bg: #070d19;
@@ -217,7 +217,7 @@
       transition: width 0.3s ease;
     }
 
-    /* SIMULATEUR ANDROID SXB VPN */
+    /* SIMULATEUR ANDROID TSEU VPN */
     .phone-frame {
       background: #050912;
       border: 3px solid #283a5a;
@@ -286,9 +286,9 @@
 
   <header class="top-bar">
     <div class="brand">
-      <div class="brand-logo">SXB</div>
+      <div class="brand-logo">TSEU</div>
       <div>
-        <h1>SXB VPN Control Plane &amp; Lab</h1>
+        <h1>TSEU VPN Control Plane &amp; Lab</h1>
         <p>Gestionnaire de Coupons, Quotas Temps Réel, Importateur Multi-Protocole (VLESS / Hysteria2 / WireGuard / DNSTT) &amp; Simulateur Android</p>
       </div>
     </div>
@@ -495,7 +495,7 @@
       <div class="phone-notch"></div>
       <div class="phone-header">
         <div>
-          <div class="phone-title">📱 SXB VPN Android</div>
+          <div class="phone-title">📱 TSEU VPN Android</div>
           <div style="font-size:0.7rem; color:var(--muted);">Simulateur Client v1.0 (VpnService)</div>
         </div>
         <span id="sim-status-pill" class="status-pill status-disconnected">DÉCONNECTÉ</span>
@@ -764,7 +764,7 @@
       await loadOverview();
     }
 
-    // LOGIQUE DU SIMULATEUR ANDROID SXB VPN
+    // LOGIQUE DU SIMULATEUR ANDROID TSEU VPN
     function useCodeInSimulator(code) {
       document.getElementById('sim-code').value = code;
       simActivateCoupon();
@@ -896,3 +896,4 @@
   </script>
 </body>
 </html>
+

@@ -14,9 +14,9 @@ import com.sxbvpn.mobile.vpn.SxbVpnService
 import kotlin.concurrent.thread
 
 /**
- * Écran principal de l'application Android SXB VPN :
+ * Écran principal de l'application Android TSEU VPN :
  * - Champ URL serveur modifiable (pré-rempli avec l'IP de votre PC : http://192.168.43.196:3847)
- * - Saisie du code d'accès (Coupon)
+ * - Saisie du code d'accès (Coupon TSEU VPN)
  * - Verrouillage de l'identifiant matériel (HWID)
  * - Stockage chiffré AES-256-GCM dans l'Android Keystore
  * - Bouton de connexion 1-Tap (VpnService) et jauge de quota
@@ -28,7 +28,7 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val prefs = getSharedPreferences("sxb_secure_prefs", MODE_PRIVATE)
+        val prefs = getSharedPreferences("tseu_secure_prefs", MODE_PRIVATE)
         val savedServerUrl = prefs.getString("server_url", "http://192.168.43.196:3847") ?: "http://192.168.43.196:3847"
         val savedCode = prefs.getString("active_code", "SXB-DEMO-2026") ?: "SXB-DEMO-2026"
 
@@ -39,8 +39,8 @@ class MainActivity : Activity() {
         }
 
         val titleView = TextView(this).apply {
-            text = "⚡ SXB VPN"
-            textSize = 26f
+            text = "⚡ TSEU VPN"
+            textSize = 28f
             setTextColor(Color.parseColor("#06B6D4"))
         }
         val statusView = TextView(this).apply {
@@ -50,7 +50,7 @@ class MainActivity : Activity() {
             setPadding(0, 8, 0, 24)
         }
         val serverLabel = TextView(this).apply {
-            text = "Serveur de contrôle (IP PC ou Domaine) :"
+            text = "Serveur TSEU VPN (IP PC ou Domaine) :"
             setTextColor(Color.parseColor("#CBD5E1"))
         }
         val serverInput = EditText(this).apply {
@@ -58,12 +58,12 @@ class MainActivity : Activity() {
             setTextColor(Color.WHITE)
         }
         val couponLabel = TextView(this).apply {
-            text = "Code d'accès (Coupon SXB) :"
+            text = "Code d'accès (Coupon TSEU VPN) :"
             setTextColor(Color.parseColor("#CBD5E1"))
             setPadding(0, 16, 0, 0)
         }
         val couponInput = EditText(this).apply {
-            hint = "Ex: SXB-DEMO-2026"
+            hint = "Ex: TSEU-DEMO-2026 ou SXB-DEMO-2026"
             setText(savedCode)
             setTextColor(Color.WHITE)
         }
@@ -73,7 +73,7 @@ class MainActivity : Activity() {
             setPadding(0, 24, 0, 24)
         }
         val connectBtn = Button(this).apply {
-            text = "ACTIVER & CONNECTER LE VPN"
+            text = "ACTIVER & CONNECTER TSEU VPN"
         }
 
         connectBtn.setOnClickListener {
@@ -81,7 +81,7 @@ class MainActivity : Activity() {
                 stopVpnService()
                 isVpnConnected = false
                 statusView.text = "Statut : Déconnecté"
-                connectBtn.text = "ACTIVER & CONNECTER LE VPN"
+                connectBtn.text = "ACTIVER & CONNECTER TSEU VPN"
                 return@setOnClickListener
             }
 
@@ -93,7 +93,7 @@ class MainActivity : Activity() {
             prefs.edit().putString("server_url", serverUrl).putString("active_code", code).apply()
             val apiClient = SxbApiClient(baseUrl = serverUrl)
 
-            statusView.text = "Connexion au serveur et déchiffrement AES-256-GCM..."
+            statusView.text = "Connexion à TSEU VPN et déchiffrement AES-256-GCM..."
             thread {
                 try {
                     val res = apiClient.activateCoupon(code, hwid, model, "Android ${Build.VERSION.RELEASE}")
@@ -109,8 +109,8 @@ class MainActivity : Activity() {
                             quotaView.text = "Forfait : ${res.planName}\nQuota restant : $remMb Mo\nExpire le : ${res.expiresAt}"
                             requestAndStartVpn()
                             isVpnConnected = true
-                            statusView.text = "Statut : VPN ACTIF (Chiffré AES-256-GCM)"
-                            connectBtn.text = "DÉCONNECTER LE VPN"
+                            statusView.text = "Statut : TSEU VPN ACTIF (AES-256-GCM)"
+                            connectBtn.text = "DÉCONNECTER TSEU VPN"
                         }
                     }
                 } catch (e: Exception) {
