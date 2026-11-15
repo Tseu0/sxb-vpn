@@ -9,23 +9,34 @@ android {
 
     defaultConfig {
         applicationId = "com.sxbvpn.mobile"
-        minSdk = 24
-        targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        minSdk = 23
+        targetSdk = 33
+        versionCode = 2
+        versionName = "1.0.2"
+    }
+
+    signingConfigs {
+        create("release") {
+            val keystoreFile = file("release-key.jks")
+            if (keystoreFile.exists()) {
+                storeFile = keystoreFile
+                storePassword = "sxbpassword2026"
+                keyAlias = "sxbkey"
+                keyPassword = "sxbpassword2026"
+                enableV1Signing = true
+                enableV2Signing = true
+            }
+        }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
-        debug {
-            applicationIdSuffix = ".debug"
-            versionNameSuffix = "-debug"
+            isMinifyEnabled = false
+            signingConfig = if (file("release-key.jks").exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 
@@ -40,5 +51,4 @@ android {
 }
 
 dependencies {
-    // Aucune dépendance lourde externe requise : compile en moins de 60 secondes !
 }
