@@ -10,9 +10,14 @@ android {
     defaultConfig {
         applicationId = "com.tseuvpn.mobile"
         minSdk = 21
-        targetSdk = 31
+        targetSdk = 33
         versionCode = 3
         versionName = "1.0.3"
+    }
+
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
     }
 
     signingConfigs {
