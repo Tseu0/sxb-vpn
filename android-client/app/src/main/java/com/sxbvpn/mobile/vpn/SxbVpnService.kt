@@ -147,8 +147,7 @@ class SxbVpnService : VpnService() {
                 broadcastState(true, "Protection active ($selectedName)")
                 startQuotaSyncLoop()
             } catch (e: Exception) {
-                broadcastState(false, "Erreur Xray : ${e.message}")
-                stopTunnel("Erreur démarrage")
+                stopTunnel("Erreur Xray : ${e.message ?: "démarrage impossible"}")
             } finally {
                 isStartingTunnel = false
             }
