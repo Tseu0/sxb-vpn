@@ -42,6 +42,8 @@ class SxbVpnService : VpnService() {
     private var activeProfileId: Int = -1
     private var lastReportedUp: Long = 0L
     private var lastReportedDown: Long = 0L
+    @Volatile private var shouldAutoReconnect: Boolean = false
+    @Volatile private var isStartingTunnel: Boolean = false
 
     override fun onCreate() {
         super.onCreate()
@@ -58,6 +60,7 @@ class SxbVpnService : VpnService() {
                 activeHwid = intent.getStringExtra("hwid") ?: ""
                 activeProfileId = intent.getIntExtra("profile_id", -1)
                 val profileName = intent.getStringExtra("profile_name") ?: "Serveur TSEU VPN"
+                shouldAutoReconnect = true
 
                 startForeground(NOTIFICATION_ID, buildStatusNotification("Connexion à $profileName..."))
                 startXrayTunnel(profileName)
@@ -71,6 +74,8 @@ class SxbVpnService : VpnService() {
     }
 
     private fun startXrayTunnel(profileName: String) {
+        if (isStartingTunnel) return
+        isStartingTunnel = true
         Thread {
             try {
                 // Lecture sécurisée des profils chiffrés dans l'Android Keystore
@@ -144,6 +149,8 @@ class SxbVpnService : VpnService() {
             } catch (e: Exception) {
                 broadcastState(false, "Erreur Xray : ${e.message}")
                 stopTunnel("Erreur démarrage")
+            } finally {
+                isStartingTunnel = false
             }
         }.start()
     }
@@ -191,7 +198,7 @@ class SxbVpnService : VpnService() {
         if (networkCallback != null) return
         val cb = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
-                if (tunInterface == null && activeCode.isNotBlank()) {
+                if (shouldAutoReconnect && !isStartingTunnel && tunInterface == null && activeCode.isNotBlank()) {
                     startXrayTunnel("Reconnexion automatique")
                 }
             }
@@ -200,6 +207,15 @@ class SxbVpnService : VpnService() {
         try {
             cm.registerDefaultNetworkCallback(cb)
         } catch (_: Exception) {}
+    }
+
+    private fun unregisterAutoReconnectCallback() {
+        networkCallback?.let {
+            try {
+                getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(it)
+            } catch (_: Exception) {}
+        }
+        networkCallback = null
     }
 
     private fun broadcastState(connected: Boolean, message: String) {
@@ -211,6 +227,10 @@ class SxbVpnService : VpnService() {
     }
 
     private fun stopTunnel(reason: String) {
+        shouldAutoReconnect = false
+        isStartingTunnel = false
+        activeCode = ""
+        unregisterAutoReconnectCallback()
         statsTask?.cancel(false)
         statsTask = null
         try {
@@ -238,9 +258,8 @@ class SxbVpnService : VpnService() {
     }
 
     override fun onDestroy() {
-        networkCallback?.let {
-            try { getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(it) } catch (_: Exception) {}
-        }
+        shouldAutoReconnect = false
+        unregisterAutoReconnectCallback()
         scheduler.shutdownNow()
         super.onDestroy()
     }
