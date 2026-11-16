@@ -8,7 +8,8 @@ import { DatabaseSync } from 'node:sqlite';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PORT = process.env.PORT || 3847;
-const DB_PATH = path.join(__dirname, 'sxb.db');
+const DB_PATH = process.env.SXB_DB_PATH || path.join(__dirname, 'sxb.db');
+fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 
 // Clé maîtresse serveur pour le chiffrement AES-256-GCM des profils envoyés aux clients mobiles
 const MASTER_SECRET = process.env.SXB_MASTER_SECRET || 'sxb-ultra-secret-master-key-2026-aes256gcm';
